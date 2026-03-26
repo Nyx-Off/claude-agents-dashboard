@@ -1,9 +1,10 @@
 ---
 name: Feature Request
-description: Suggest a new feature or improvement for the dashboard
+about: Feature Request
 title: "[FEATURE] "
-labels: ["enhancement"]
-assignees: ["Nyx-Off"]
+labels: enhancement
+assignees: Nyx-Off
+
 ---
 
 ## Problem Description

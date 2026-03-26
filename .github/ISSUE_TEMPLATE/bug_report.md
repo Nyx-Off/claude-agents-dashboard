@@ -1,9 +1,10 @@
 ---
 name: Bug Report
-description: Report a bug to help us improve the dashboard
+about: Bug Report
 title: "[BUG] "
-labels: ["bug"]
-assignees: ["Nyx-Off"]
+labels: bug, enhancement
+assignees: Nyx-Off
+
 ---
 
 ## Description

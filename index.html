@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Claude Agents HQ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0f0f23;color:#ccc;font-family:'Press Start 2P',monospace;font-size:10px;min-height:100vh}
+
+  .stars{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;pointer-events:none}
+  .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s ease-in-out infinite alternate}
+  @keyframes twinkle{0%{opacity:.2}100%{opacity:1}}
+
+  header{position:relative;z-index:1;text-align:center;padding:20px 16px 10px;border-bottom:4px solid #333;background:linear-gradient(180deg,#1a1a3e,#0f0f23)}
+  header h1{font-size:16px;color:#ffcc00;text-shadow:3px 3px 0 #aa6600,0 0 20px #ffcc0044;letter-spacing:4px}
+  .subtitle{margin-top:6px;font-size:8px;color:#666}
+  .connection{margin-top:4px;font-size:7px}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:middle}
+  .dot.on{background:#00ff88;box-shadow:0 0 6px #00ff88}
+  .dot.off{background:#ff4444;box-shadow:0 0 6px #ff4444}
+
+  .stats-bar{position:relative;z-index:1;display:flex;justify-content:center;gap:24px;padding:10px;background:#1a1a2e;border-bottom:2px solid #333;flex-wrap:wrap}
+  .stat{display:flex;align-items:center;gap:6px}
+  .stat-label{color:#888;font-size:7px}
+  .stat-value{font-size:11px}
+  .green{color:#00ff88}.cyan{color:#00ccff}.magenta{color:#ff66ff}.yellow{color:#ffcc00}.red{color:#ff4466}
+
+  .xp-bar{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;background:#12122a;border-bottom:2px solid #333}
+  .xp-level{color:#ffcc00;font-size:9px;text-shadow:1px 1px 0 #886600}
+  .xp-track{width:250px;height:12px;background:#222;border:2px solid #555;overflow:hidden}
+  .xp-fill{height:100%;background:linear-gradient(90deg,#886600,#ffcc00);transition:width .5s;box-shadow:0 0 8px #ffcc0066}
+  .xp-text{color:#888;font-size:7px}
+
+  .nav{position:relative;z-index:1;display:flex;justify-content:center;gap:4px;padding:8px;background:#151530;border-bottom:3px solid #333}
+  .nav-btn{font-family:'Press Start 2P',monospace;font-size:8px;padding:6px 14px;background:#222244;color:#888;border:2px solid #444;cursor:pointer;transition:all .2s}
+  .nav-btn:hover{background:#333366;color:#fff;border-color:#666;transform:translateY(-2px);box-shadow:0 4px 0 #111}
+  .nav-btn.active{background:#3344aa;color:#fff;border-color:#5566cc;box-shadow:0 0 12px #3344aa66}
+
+  main{position:relative;z-index:1;padding:14px;max-width:1200px;margin:0 auto}
+  .tab-panel{display:none}.tab-panel.active{display:block}
+
+  .agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+
+  .agent-card{background:#1a1a3e;border:3px solid #333;padding:14px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+  .agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .agent-card:hover{transform:translateY(-3px);box-shadow:0 6px 0 #0a0a15}
+  .agent-card.selected{box-shadow:0 0 20px var(--c-glow),inset 0 0 30px #00000066}
+  .agent-card::before,.agent-card.selected{border-color:var(--c)}
+  .agent-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .agent-name{font-size:9px;color:var(--c);text-shadow:0 0 8px var(--c-glow)}
+
+  .badge{font-size:6px;padding:3px 6px;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
+  .badge-idle{background:#444;color:#999}
+  .badge-working{background:#886600;color:#ffcc00;animation:pulse 1s infinite}
+  .badge-done{background:#006633;color:#00ff88}
+  .badge-error{background:#660000;color:#ff4444}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+  .sprite-area{display:flex;justify-content:center;margin:10px 0;height:48px}
+  .sprite-area canvas{image-rendering:pixelated}
+
+  .agent-task{font-size:7px;color:#aaa;margin-top:6px;min-height:18px;word-break:break-all}
+  .agent-tools-mini{margin-top:8px;font-size:7px;max-height:120px;overflow-y:auto;background:#0a0a1a;border:1px solid #222;padding:4px 6px}
+  .agent-tools-mini .atm{padding:3px 0;border-bottom:1px solid #1a1a2e;display:flex;gap:6px;align-items:center}
+  .agent-tools-mini .atm-icon{flex-shrink:0;font-size:9px}
+  .agent-tools-mini .atm-name{color:var(--c);flex-shrink:0;font-weight:bold;min-width:36px}
+  .agent-tools-mini .atm-sum{color:#aaa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .agent-tools-mini .atm-st{flex-shrink:0}
+  .agent-tools-mini .atm-none{color:#444;font-style:italic;padding:4px 0}
+  .agent-tools-count{font-size:7px;color:#666;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+  .agent-tools-count span{color:var(--c)}
+  .agent-time{font-size:6px;color:#555;margin-top:6px;text-align:right}
+
+  .detail{display:none;background:#12122a;border:3px solid #333;padding:16px;margin-top:14px;animation:slideD .3s ease}
+  .detail.show{display:block}
+  @keyframes slideD{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  .detail-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #333}
+  .detail-title{font-size:12px}
+  .btn-close{font-family:'Press Start 2P',monospace;font-size:9px;background:#440000;color:#ff4444;border:2px solid #ff4444;padding:4px 10px;cursor:pointer}
+  .btn-close:hover{background:#ff4444;color:#000}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .detail-section h3{font-size:8px;color:#888;margin-bottom:8px;text-transform:uppercase}
+  .d-stat{font-size:7px;color:#ccc;margin:5px 0}.d-stat span{color:var(--c)}
+
+  .history-item{font-size:6px;color:#888;padding:3px 0;border-bottom:1px solid #1a1a1a}
+  .history-item .ht{color:#555}.history-item .hm{color:#aaa}
+
+  .log-box{background:#0a0a1a;border:2px solid #333;padding:10px;max-height:500px;overflow-y:auto}
+  .log-box h3{font-size:8px;color:#666;margin-bottom:8px;text-transform:uppercase}
+  .log-entry{font-size:7px;padding:2px 0;border-bottom:1px solid #151515;display:flex;gap:8px}
+  .lt{color:#444;white-space:nowrap}.la{white-space:nowrap}.lm{color:#999}
+
+  .empty{text-align:center;padding:40px;color:#555;font-size:9px}
+  .empty .big{font-size:32px;margin-bottom:16px}
+
+  .controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .ctrl{font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;border:2px solid;cursor:pointer;transition:all .2s;background:transparent}
+  .ctrl:hover{transform:translateY(-2px);box-shadow:0 4px 0 #111}
+  .ctrl-g{color:#00ff88;border-color:#00ff88}.ctrl-g:hover{background:#00ff88;color:#000}
+  .ctrl-r{color:#ff4444;border-color:#ff4444}.ctrl-r:hover{background:#ff4444;color:#000}
+  .ctrl-y{color:#ffcc00;border-color:#ffcc00}.ctrl-y:hover{background:#ffcc00;color:#000}
+
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .s-card{background:#1a1a3e;border:2px solid #333;padding:14px}
+  .s-card h3{font-size:8px;color:#ffcc00;margin-bottom:10px}
+  .s-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #222;font-size:7px}
+  .s-item label{color:#aaa}
+  .toggle{width:32px;height:16px;background:#333;border:2px solid #555;cursor:pointer;position:relative}
+  .toggle.on{background:#006633;border-color:#00ff88}
+  .toggle::after{content:'';position:absolute;width:8px;height:8px;background:#888;top:2px;left:2px;transition:all .2s}
+  .toggle.on::after{left:16px;background:#00ff88}
+
+  .toasts{position:fixed;top:12px;right:12px;z-index:100;display:flex;flex-direction:column;gap:6px}
+  .toast{font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;border:2px solid;animation:tIn .3s ease,tOut .3s ease 2.7s forwards;max-width:280px}
+  .toast-s{background:#002211;color:#00ff88;border-color:#00ff88}
+  .toast-i{background:#001133;color:#4488ff;border-color:#4488ff}
+  .toast-w{background:#221100;color:#ffcc00;border-color:#ffcc00}
+  @keyframes tIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+  @keyframes tOut{to{opacity:0;transform:translateX(20px)}}
+
+  .current-activity{border-left:3px solid #4488ff;background:#0a1a3a;padding:8px 10px;margin-bottom:14px;font-size:7px;color:#88bbff}
+  .tool-stats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;padding:8px;background:#0a0a1a;border:1px solid #333}
+  .tool-stat-item{font-size:7px;padding:3px 8px;background:#1a1a3e;border:1px solid #333;color:#aaa}
+  .tool-stat-item span{font-weight:bold}
+  .tool-timeline{max-height:300px;overflow-y:auto;margin-top:10px;border:1px solid #333;background:#0a0a1a;padding:6px}
+  .tool-entry{display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px solid #151515;font-size:7px}
+  .tool-icon{width:16px;text-align:center;flex-shrink:0}
+  .tool-name{white-space:nowrap;font-weight:bold;flex-shrink:0}
+  .tool-summary{color:#888;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tool-status{width:16px;text-align:center;flex-shrink:0}
+  .tool-time{color:#555;white-space:nowrap;font-size:6px;flex-shrink:0}
+
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a15}::-webkit-scrollbar-thumb{background:#333}
+  @media(max-width:700px){.agents-grid,.detail-grid,.settings-grid{grid-template-columns:1fr}.stats-bar{gap:10px}}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div class="toasts" id="toasts"></div>
+
+<header>
+  <h1>CLAUDE AGENTS HQ</h1>
+  <div class="subtitle">~ Dashboard connecte au CLI ~</div>
+  <div class="connection" id="conn"><span class="dot off"></span> Disconnected</div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-label">AGENTS</span><span class="stat-value green" id="s-agents">0</span></div>
+  <div class="stat"><span class="stat-label">WORKING</span><span class="stat-value yellow" id="s-working">0</span></div>
+  <div class="stat"><span class="stat-label">DONE</span><span class="stat-value cyan" id="s-done">0</span></div>
+  <div class="stat"><span class="stat-label">MODEL</span><span class="stat-value magenta">OPUS 4.6</span></div>
+  <div class="stat"><span class="stat-label">UPTIME</span><span class="stat-value" id="s-uptime" style="color:#888">--:--</span></div>
+</div>
+
+<div class="xp-bar">
+  <span class="xp-level" id="xp-lvl">* LVL 1</span>
+  <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+  <span class="xp-text" id="xp-txt">0/500 XP</span>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" data-tab="agents">AGENTS</button>
+  <button class="nav-btn" data-tab="log">LOG</button>
+  <button class="nav-btn" data-tab="settings">CONFIG</button>
+</nav>
+
+<main>
+  <div class="tab-panel active" id="tab-agents">
+    <div class="controls">
+      <button class="ctrl ctrl-r" onclick="resetDashboard()">~ RESET</button>
+    </div>
+    <div id="agents-grid" class="agents-grid"></div>
+    <div id="empty-state" class="empty">
+      <div class="big">( ._.)</div>
+      <p>Aucun agent actif...</p>
+      <p style="margin-top:12px;color:#444;font-size:7px">Les agents apparaitront ici quand Claude CLI en lancera.</p>
+      <p style="margin-top:8px;color:#444;font-size:7px">Assure-toi que le serveur tourne et les hooks sont configures.</p>
+    </div>
+    <div class="detail" id="detail"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-log">
+    <div class="controls">
+      <button class="ctrl ctrl-r" onclick="clearLog()">CLEAR</button>
+      <button class="ctrl ctrl-g" onclick="copyLog()">COPY</button>
+    </div>
+    <div class="log-box" id="log-box">
+      <h3>Activity Log</h3>
+      <div id="log-entries"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-settings">
+    <div class="settings-grid">
+      <div class="s-card">
+        <h3>Connection</h3>
+        <div class="s-item"><label>Server URL</label><span style="color:#00ccff;font-size:7px">localhost:8787</span></div>
+        <div class="s-item"><label>Poll interval</label><span style="color:#ccc;font-size:7px">1 sec</span></div>
+        <div class="s-item"><label>Status</label><span id="cfg-status" style="font-size:7px">...</span></div>
+      </div>
+      <div class="s-card">
+        <h3>Hooks</h3>
+        <div class="s-item"><label>PreToolUse (Agent)</label><span id="hook-pre" style="font-size:7px;color:#888">checking...</span></div>
+        <div class="s-item"><label>PostToolUse (Agent)</label><span id="hook-post" style="font-size:7px;color:#888">checking...</span></div>
+      </div>
+      <div class="s-card">
+        <h3>Plugins</h3>
+        <div class="s-item"><label>code-simplifier</label><span style="color:#00ff88;font-size:7px">ACTIVE</span></div>
+        <div class="s-item"><label>code-review</label><span style="color:#00ff88;font-size:7px">ACTIVE</span></div>
+        <div class="s-item"><label>claude-md-mgmt</label><span style="color:#00ff88;font-size:7px">ACTIVE</span></div>
+      </div>
+      <div class="s-card">
+        <h3>Display</h3>
+        <div class="s-item"><label>Stars BG</label><div class="toggle on" onclick="this.classList.toggle('on');document.getElementById('stars').style.display=this.classList.contains('on')?'':'none'"></div></div>
+        <div class="s-item"><label>Sound FX</label><div class="toggle" onclick="this.classList.toggle('on');soundOn=this.classList.contains('on')"></div></div>
+        <div class="s-item"><label>Auto-scroll log</label><div class="toggle on" id="autoscroll" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = location.origin;
+let state = { agents: [], log: [], totalXP: 0, version: -1 };
+let selectedId = null;
+let connected = false;
+let startTime = Date.now();
+let prevAgentCount = 0;
+let soundOn = false;
+let lastLogLen = 0;
+let lastVersion = -1;
+
+/* ── Composable Sprite System ── */
+const HEADS = [
+  ['..####..','########','########','########','########','########','.######.','.##..##.'],
+  ['..####..','########','########','########','########','.######.','..####..','..#..#..'],
+  ['.######.','########','########','########','########','########','.######.','..#..#..'],
+];
+const EYES_IDLE = [
+  [[1,3],[1,5]],
+  [[1,2],[1,3],[1,5],[1,6]],
+  [[2,3],[2,5]],
+  [[1,2],[1,3],[2,2],[2,3],[1,5]],
+  [[1,3],[1,4],[1,5],[1,6]],
+  [[2,2],[2,6]],
+];
+const EYES_WORK = [
+  [[1,3],[1,5]],
+  [[2,3],[2,5]],
+  [[1,2],[1,6]],
+  [[2,3],[2,5]],
+  [[1,3],[1,5]],
+  [[1,3],[1,5]],
+];
+const MOUTHS = [
+  [[4,3],[4,4]],
+  [[4,3],[4,4],[4,5]],
+  [[4,4]],
+  [[4,2],[4,3],[4,4],[4,5]],
+];
+const ACCESSORIES = [
+  [],
+  [[0,2],[0,3],[0,4],[0,5]],
+  [[0,4]],
+  [[0,2],[0,6]],
+  [[0,2],[0,4],[0,6]],
+];
+
+function seedRandom(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return function(arr) { h = (h * 16807) & 0x7fffffff; return arr[h % arr.length]; };
+}
+
+function toolIcon(name) {
+  return {Bash:'\u{1F5A5}',Read:'\u{1F4C4}',Write:'\u{270F}',Edit:'\u{270F}',Grep:'\u{1F50D}',Glob:'\u{1F4C1}',WebSearch:'\u{1F310}',WebFetch:'\u{1F310}',Agent:'\u{1F916}'}[name]||'\u{2699}';
+}
+
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  return audioCtx;
+}
+
+function init() {
+  createStars();
+  setupTabs();
+  poll();
+  setInterval(poll, 1000);
+  setInterval(updateUptime, 1000);
+  setInterval(animateSprites, 600);
+}
+
+function createStars() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 2.5 + 1;
+    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${1+Math.random()*3}s`;
+    c.appendChild(s);
+  }
+}
+
+function setupTabs() {
+  document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-' + b.dataset.tab).classList.add('active');
+  }));
+}
+
+async function poll() {
+  try {
+    const r = await fetch(API + '/api/agents?v=' + state.version, { cache: 'no-store' });
+    if (r.status === 304) return;
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+
+    const wasConnected = connected;
+    if (!connected) { connected = true; toast('Connected to CLI!', 's'); }
+    if (!wasConnected) updateConnectionUI(true);
+
+    if (data.version === lastVersion) return;
+    lastVersion = data.version;
+
+    if (data.agents && data.agents.length > prevAgentCount) {
+      const newOnes = data.agents.slice(prevAgentCount);
+      newOnes.forEach(a => toast(`${a.label || a.name || 'Agent'} started!`, 's'));
+      if (soundOn) beep();
+    }
+    prevAgentCount = data.agents ? data.agents.length : 0;
+
+    state = data;
+    render();
+
+    if (data.log && data.log.length > lastLogLen) {
+      lastLogLen = data.log.length;
+      renderLog();
+    }
+  } catch (e) {
+    if (connected) { connected = false; toast('Connection lost', 'w'); updateConnectionUI(false); }
+  }
+}
+
+function updateConnectionUI(isConnected) {
+  if (isConnected) {
+    document.getElementById('conn').innerHTML = '<span class="dot on"></span> Connected';
+    document.getElementById('cfg-status').innerHTML = '<span style="color:#00ff88">CONNECTED</span>';
+    document.getElementById('hook-pre').innerHTML = '<span style="color:#888">via hook.sh pre</span>';
+    document.getElementById('hook-post').innerHTML = '<span style="color:#888">via hook.sh post</span>';
+  } else {
+    document.getElementById('conn').innerHTML = '<span class="dot off"></span> Disconnected';
+    document.getElementById('cfg-status').innerHTML = '<span style="color:#ff4444">DISCONNECTED</span>';
+  }
+}
+
+function render() {
+  const agents = state.agents || [];
+  const grid = document.getElementById('agents-grid');
+  const empty = document.getElementById('empty-state');
+
+  let working = 0, done = 0;
+  for (let i = 0; i < agents.length; i++) {
+    if (agents[i].status === 'working') working++;
+    else if (agents[i].status === 'done') done++;
+  }
+  document.getElementById('s-agents').textContent = agents.length;
+  document.getElementById('s-working').textContent = working;
+  document.getElementById('s-done').textContent = done;
+
+  const xp = state.totalXP || 0;
+  const lvl = Math.floor(xp / 500) + 1;
+  const xpInLvl = xp % 500;
+  document.getElementById('xp-lvl').textContent = '* LVL ' + lvl;
+  document.getElementById('xp-fill').style.width = ((xpInLvl / 500) * 100) + '%';
+  document.getElementById('xp-txt').textContent = xpInLvl + '/500 XP';
+
+  if (agents.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = '';
+    return;
+  }
+  grid.style.display = '';
+  empty.style.display = 'none';
+
+  const existingCards = {};
+  grid.querySelectorAll('.agent-card').forEach(card => {
+    existingCards[card.dataset.agentId] = card;
+  });
+
+  const seenIds = new Set();
+  agents.forEach((a) => {
+    const aid = a.id || 'unknown';
+    seenIds.add(aid);
+    const color = a.color || '#00ccff';
+    const glow = color + '44';
+    const elapsed = a.startEpoch ? timeSince(a.startEpoch) : '';
+    const isSelected = selectedId === aid;
+    const statusClass = a.status === 'working' ? 'badge-working' : a.status === 'done' ? 'badge-done' : a.status === 'error' ? 'badge-error' : 'badge-idle';
+
+    let card = existingCards[aid];
+    if (card) {
+      updateCard(card, a, color, glow, elapsed, isSelected, statusClass);
+    } else {
+      card = document.createElement('div');
+      card.className = 'agent-card';
+      card.dataset.agentId = aid;
+      card.innerHTML = buildCardInner(a, color, glow, elapsed, statusClass);
+      card.style.setProperty('--c', color);
+      card.style.setProperty('--c-glow', glow);
+      card.onclick = () => toggleDetail(aid);
+      grid.appendChild(card);
+    }
+    card.classList.toggle('selected', isSelected);
+    card.style.borderColor = isSelected ? color : '#333';
+  });
+
+  Object.keys(existingCards).forEach(id => {
+    if (!seenIds.has(id)) existingCards[id].remove();
+  });
+
+  requestAnimationFrame(() => {
+    agents.forEach(a => drawSprite(a.id, a));
+  });
+
+  if (selectedId !== null) showDetail(selectedId);
+}
+
+function buildCardInner(a, color, glow, elapsed, statusClass) {
+  const aid = a.id || 'unknown';
+  const displayName = a.label || a.name || 'Agent';
+  const tools = a.toolCalls || [];
+  return `
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${color}"></div>
+    <div class="agent-header">
+      <span class="agent-name" style="color:${color};text-shadow:0 0 8px ${glow}">${escHtml(displayName)}</span>
+      <span class="badge ${statusClass}" data-role="badge">${(a.status||'idle').toUpperCase()}</span>
+    </div>
+    <div class="sprite-area"><canvas data-role="sprite" data-aid="${aid}" width="48" height="48" style="width:48px;height:48px;image-rendering:pixelated"></canvas></div>
+    <div class="agent-task" data-role="task">${escHtml(a.task || a.description || '...')}</div>
+    <div class="agent-tools-mini" data-role="tools-mini">${buildToolsMiniHtml(tools, color)}</div>
+    ${tools.length > 0 ? `<div class="agent-tools-count" data-role="tools-count">` +
+      `<span>${tools.length} call${tools.length>1?'s':''}</span>` +
+      toolCountsByType(tools, color) +
+    `</div>` : ''}
+    ${elapsed ? `<div class="agent-time" data-role="time">${elapsed}</div>` : ''}
+  `;
+}
+
+function buildToolsMiniHtml(tools, color) {
+  if (!tools || tools.length === 0) return '<div class="atm-none">Waiting for tool calls...</div>';
+  return tools.map(t => {
+    const st = t.status === 'running' ? '\u23F3' : t.status === 'error' ? '\u274C' : '\u2705';
+    const sumColor = t.status === 'error' ? '#ff4444' : '#aaa';
+    return `<div class="atm"><span class="atm-icon">${toolIcon(t.tool)}</span><span class="atm-name">${escHtml(t.tool)}</span><span class="atm-sum" style="color:${sumColor}">${escHtml(truncate(t.summary||'',50))}</span><span class="atm-st">${st}</span></div>`;
+  }).join('');
+}
+
+function toolCountsByType(tools, color) {
+  const counts = {};
+  tools.forEach(t => { counts[t.tool] = (counts[t.tool] || 0) + 1; });
+  return Object.entries(counts).map(([name, count]) =>
+    `${toolIcon(name)} ${name}:${count}`
+  ).join(' ');
+}
+
+function updateCard(card, a, color, glow, elapsed, isSelected, statusClass) {
+  const badge = card.querySelector('[data-role="badge"]');
+  if (badge) { badge.className = 'badge ' + statusClass; badge.textContent = (a.status||'idle').toUpperCase(); }
+
+  const task = card.querySelector('[data-role="task"]');
+  if (task) task.textContent = a.task || a.description || '...';
+
+  // Update name label (might have changed from "Explorer" to "Explorer #1")
+  const nameEl = card.querySelector('.agent-name');
+  if (nameEl) nameEl.textContent = a.label || a.name || 'Agent';
+
+  // Update mini tool calls list
+  const toolsMini = card.querySelector('[data-role="tools-mini"]');
+  if (toolsMini) {
+    const tools = a.toolCalls || [];
+    toolsMini.innerHTML = buildToolsMiniHtml(tools, a.color || '#00ccff');
+    // Auto-scroll to bottom to show latest tool
+    toolsMini.scrollTop = toolsMini.scrollHeight;
+  }
+  // Update tool counts
+  const toolsCount = card.querySelector('[data-role="tools-count"]');
+  const tools = a.toolCalls || [];
+  if (tools.length > 0) {
+    if (toolsCount) {
+      toolsCount.innerHTML = `<span>${tools.length} call${tools.length>1?'s':''}</span> ${toolCountsByType(tools, a.color)}`;
+    } else {
+      const div = document.createElement('div');
+      div.className = 'agent-tools-count';
+      div.dataset.role = 'tools-count';
+      div.innerHTML = `<span>${tools.length} call${tools.length>1?'s':''}</span> ${toolCountsByType(tools, a.color)}`;
+      const timeEl = card.querySelector('[data-role="time"]');
+      if (timeEl) card.insertBefore(div, timeEl);
+      else card.appendChild(div);
+    }
+  }
+
+  const timeEl = card.querySelector('[data-role="time"]');
+  if (timeEl && elapsed) timeEl.textContent = elapsed;
+  else if (!timeEl && elapsed) {
+    const div = document.createElement('div');
+    div.className = 'agent-time';
+    div.dataset.role = 'time';
+    div.textContent = elapsed;
+    card.appendChild(div);
+  }
+
+  card.onclick = () => toggleDetail(a.id);
+}
+
+let spriteFrame = 0;
+function animateSprites() {
+  spriteFrame++;
+  (state.agents || []).forEach(a => {
+    if (a.status === 'done') return;
+    drawSprite(a.id, a);
+  });
+}
+
+function drawSprite(aid, agent) {
+  const canvas = document.querySelector(`canvas[data-aid="${aid}"]`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 48, 48);
+
+  const pick = seedRandom(aid);
+  const head = pick(HEADS);
+  const eyesIdle = pick(EYES_IDLE);
+  const eyesWork = pick(EYES_WORK);
+  const mouth = pick(MOUTHS);
+  const accessory = pick(ACCESSORIES);
+
+  const px = 6;
+  const color = agent.color || '#00ccff';
+
+  // Draw head
+  head.forEach((row, y) => {
+    [...row].forEach((c, x) => {
+      if (c === '#') {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * px, y * px, px, px);
+      }
+    });
+  });
+
+  // Overlay eyes: use work eyes when working and on alternate frame
+  const isWork = agent.status === 'working' && spriteFrame % 2 === 0;
+  const eyes = isWork ? eyesWork : eyesIdle;
+  ctx.fillStyle = '#ffffff';
+  eyes.forEach(([r, c]) => {
+    ctx.fillRect(c * px, r * px, px, px);
+  });
+
+  // Overlay mouth
+  ctx.fillStyle = '#ffffff';
+  mouth.forEach(([r, c]) => {
+    ctx.fillRect(c * px, r * px, px, px);
+  });
+
+  // Overlay accessory
+  if (accessory.length > 0) {
+    ctx.fillStyle = '#ffcc00';
+    accessory.forEach(([r, c]) => {
+      ctx.fillRect(c * px, r * px, px, px);
+    });
+  }
+}
+
+function toggleDetail(aid) {
+  selectedId = selectedId === aid ? null : aid;
+  const d = document.getElementById('detail');
+  if (selectedId === null) { d.classList.remove('show'); render(); return; }
+  showDetail(aid);
+  render();
+}
+
+function showDetail(aid) {
+  const agents = state.agents || [];
+  const a = agents.find(x => x.id === aid);
+  if (!a) return;
+  const d = document.getElementById('detail');
+  const color = a.color || '#00ccff';
+  d.style.setProperty('--c', color);
+
+  const elapsed = a.startEpoch ? timeSince(a.startEpoch) : 'N/A';
+  const displayName = a.label || a.name;
+  const logs = (state.log || []).filter(l => l.agent === displayName || l.agent === a.name);
+  const tools = a.toolCalls || [];
+  const runningTool = tools.slice().reverse().find(t => t.status === 'running');
+
+  // Tool stats
+  const totalTools = tools.length;
+  const bashCount = tools.filter(t => t.tool === 'Bash').length;
+  const readCount = tools.filter(t => t.tool === 'Read').length;
+  const writeCount = tools.filter(t => t.tool === 'Write' || t.tool === 'Edit').length;
+  const searchCount = tools.filter(t => t.tool === 'Grep' || t.tool === 'Glob' || t.tool === 'WebSearch' || t.tool === 'WebFetch').length;
+  const errorCount = tools.filter(t => t.status === 'error').length;
+
+  // Build current activity box
+  let activityHtml = '';
+  if (runningTool) {
+    activityHtml = `<div class="current-activity">Currently executing: ${toolIcon(runningTool.tool)} <strong>${escHtml(runningTool.tool)}</strong>: ${escHtml(truncate(runningTool.summary, 60))}</div>`;
+  }
+
+  // Build tool timeline entries (reverse chronological)
+  const timelineEntries = tools.slice().reverse().map(t => {
+    const statusEmoji = t.status === 'running' ? '\u23F3' : t.status === 'error' ? '\u274C' : '\u2705';
+    const nameColor = t.status === 'error' ? '#ff4444' : color;
+    return `<div class="tool-entry">
+      <span class="tool-icon">${toolIcon(t.tool)}</span>
+      <span class="tool-name" style="color:${nameColor}">${escHtml(t.tool)}</span>
+      <span class="tool-summary">${escHtml(truncate(t.summary || '', 50))}</span>
+      <span class="tool-status">${statusEmoji}</span>
+      <span class="tool-time">${escHtml(t.time || '')}</span>
+    </div>`;
+  }).join('');
+
+  d.innerHTML = `
+    <div class="detail-head">
+      <span class="detail-title" style="color:${color}">${escHtml(displayName)} - Detail</span>
+      <button class="btn-close" onclick="selectedId=null;document.getElementById('detail').classList.remove('show');render()">X</button>
+    </div>
+    ${activityHtml}
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Info</h3>
+        <div class="d-stat">ID: <span>${escHtml(a.id || '?')}</span></div>
+        <div class="d-stat">Type: <span>${escHtml(a.type || 'general')}</span></div>
+        <div class="d-stat">Status: <span>${escHtml(a.status || 'idle')}</span></div>
+        <div class="d-stat">Started: <span>${escHtml(a.startedAt || '?')}</span></div>
+        <div class="d-stat">Elapsed: <span>${elapsed}</span></div>
+        <div class="d-stat">Tool calls: <span>${totalTools}</span></div>
+      </div>
+      <div class="detail-section">
+        <h3>Task</h3>
+        <div class="d-stat" style="line-height:1.6">${escHtml(a.task || a.description || 'N/A')}</div>
+        ${a.prompt ? `<h3 style="margin-top:10px">Prompt</h3><div class="d-stat" style="color:#aaa;line-height:1.6;max-height:100px;overflow-y:auto">${escHtml(a.prompt)}</div>` : ''}
+      </div>
+    </div>
+    <div class="tool-stats">
+      <div class="tool-stat-item">Total: <span style="color:${color}">${totalTools}</span></div>
+      <div class="tool-stat-item">Bash: <span style="color:#00ccff">${bashCount}</span></div>
+      <div class="tool-stat-item">Read: <span style="color:#00ff88">${readCount}</span></div>
+      <div class="tool-stat-item">Write: <span style="color:#ff66ff">${writeCount}</span></div>
+      <div class="tool-stat-item">Search: <span style="color:#ffcc00">${searchCount}</span></div>
+      <div class="tool-stat-item">Errors: <span style="color:#ff4444">${errorCount}</span></div>
+    </div>
+    ${totalTools > 0 ? `
+    <div style="margin-top:14px">
+      <h3 style="font-size:8px;color:#888;margin-bottom:8px">TOOL CALL TIMELINE</h3>
+      <div class="tool-timeline">${timelineEntries}</div>
+    </div>` : ''}
+    <div style="margin-top:14px">
+      <h3 style="font-size:8px;color:#888;margin-bottom:8px">HISTORY FOR ${escHtml(displayName)}</h3>
+      ${logs.length === 0 ? '<div style="font-size:7px;color:#555">No log entries</div>' : ''}
+      ${logs.slice(-10).map(l => `<div class="history-item"><span class="ht">${escHtml(l.time)}</span> <span class="hm">${escHtml(l.msg)}</span></div>`).join('')}
+    </div>
+  `;
+  d.classList.add('show');
+}
+
+function renderLog() {
+  const entries = state.log || [];
+  document.getElementById('log-entries').innerHTML = entries.slice(-100).reverse().map(e =>
+    `<div class="log-entry"><span class="lt">${escHtml(e.time||'')}</span><span class="la" style="color:${e.color||'#888'}">${escHtml(e.agent||'')}</span><span class="lm">${escHtml(e.msg||'')}</span></div>`
+  ).join('');
+  if (document.getElementById('autoscroll')?.classList.contains('on')) {
+    document.getElementById('log-box').scrollTop = 0;
+  }
+}
+
+function clearLog() {
+  state.log = [];
+  renderLog();
+  fetch(API + '/api/agents', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(state) });
+}
+
+function copyLog() {
+  const txt = (state.log || []).map(e => `[${e.time}] ${e.agent}: ${e.msg}`).join('\n');
+  navigator.clipboard.writeText(txt).then(() => toast('Log copied!', 'i'));
+}
+
+async function resetDashboard() {
+  try {
+    await fetch(API + '/api/reset', { method: 'POST' });
+    state = { agents: [], log: [], totalXP: 0, version: -1 };
+    selectedId = null;
+    prevAgentCount = 0;
+    lastLogLen = 0;
+    lastVersion = -1;
+    render();
+    renderLog();
+    toast('Dashboard reset', 'w');
+  } catch (e) { toast('Reset failed', 'w'); }
+}
+
+function updateUptime() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = String(Math.floor(s / 60)).padStart(2, '0');
+  const sec = String(s % 60).padStart(2, '0');
+  document.getElementById('s-uptime').textContent = m + ':' + sec;
+}
+
+function timeSince(epoch) {
+  const s = Math.floor(Date.now() / 1000) - epoch;
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+}
+function truncate(str, n) { return str && str.length > n ? str.slice(0, n) + '...' : str || ''; }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function toast(msg, type) {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + (type || 'i');
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function beep() {
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = 800;
+    g.gain.value = 0.1;
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.08);
+  } catch(e) {}
+}
+
+init();
+</script>
+</body>
+</html>

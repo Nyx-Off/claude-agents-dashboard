@@ -1,0 +1,5 @@
+node_modules/
+agents.json
+.DS_Store
+*.log
+.claude/

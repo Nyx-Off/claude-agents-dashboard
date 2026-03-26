@@ -1,0 +1,19 @@
+{
+  "name": "claude-agents-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time 8-bit pixel art dashboard for monitoring Claude Code agents",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "claude",
+    "agents",
+    "dashboard",
+    "cli",
+    "monitoring",
+    "pixel-art"
+  ],
+  "author": "Nyx-Off",
+  "license": "MIT"
+}

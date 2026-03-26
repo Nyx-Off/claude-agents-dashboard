@@ -1,59 +1,61 @@
 # Claude Agents Dashboard
 
-**Tableau de bord temps reel 8-bit pour visualiser les agents Claude Code.**
+> **[Lire en francais](README.fr.md)**
 
-Chaque agent lancé par Claude Code apparait en direct sur le dashboard avec ses actions, commandes, fichiers lus/ecrits, et son sprite unique.
+**Real-time 8-bit dashboard for monitoring Claude Code agents.**
+
+Every agent spawned by Claude Code appears live on the dashboard with its actions, commands, files read/written, and a unique pixel-art sprite.
 
 ---
 
-## Ce que ca fait
+## What it does
 
-- Affiche chaque agent (Explorer, Planner, Reviewer...) avec un sprite pixel-art unique
-- Liste en temps reel les tool calls de chaque agent (Bash, Read, Write, Grep, Glob...)
-- Attribution precise : chaque tool call est lie au bon agent, meme avec plusieurs agents en parallele
-- Log d'activite global, systeme d'XP, detail au clic
-- Zero framework, zero build step, zero dependance npm
+- Displays each agent (Explorer, Planner, Reviewer...) with a unique pixel-art sprite
+- Lists every tool call per agent in real time (Bash, Read, Write, Grep, Glob...)
+- Precise attribution: each tool call is linked to the correct agent, even with multiple agents running in parallel
+- Global activity log, XP system, click-to-expand details
+- Zero framework, zero build step, zero npm dependencies
 
 ## Architecture
 
 ```
-Claude Code CLI  ──hook.sh──>  Server Node.js (localhost:8787)  <──poll──  Dashboard (navigateur)
+Claude Code CLI  ──hook.sh──>  Node.js Server (localhost:8787)  <──poll──  Dashboard (browser)
 ```
 
-1. Les **hooks** Claude Code (`PreToolUse` / `PostToolUse`) envoient chaque evenement au serveur via `hook.sh`
-2. Le **serveur** Node.js stocke l'etat en memoire et le sert via API JSON
-3. Le **dashboard** HTML poll le serveur chaque seconde et affiche tout en pixel-art
+1. Claude Code **hooks** (`PreToolUse` / `PostToolUse`) send each event to the server via `hook.sh`
+2. The Node.js **server** stores state in memory and serves it through a JSON API
+3. The HTML **dashboard** polls the server every second and renders everything in pixel art
 
 ---
 
-## Prerequis
+## Prerequisites
 
-| Outil | Version | Installation |
+| Tool | Version | Installation |
 |---|---|---|
-| **Node.js** | 18+ | [nodejs.org](https://nodejs.org) ou `winget install OpenJS.NodeJS.LTS` |
+| **Node.js** | 18+ | [nodejs.org](https://nodejs.org) or `winget install OpenJS.NodeJS.LTS` |
 | **Claude Code CLI** | latest | `npm install -g @anthropic-ai/claude-code` |
-| **bash** | any | Inclus avec Git for Windows, WSL, macOS, Linux |
-| **curl** | any | Inclus sur macOS/Linux, inclus avec Git for Windows |
-| **jq** | any | Optionnel mais recommande — `winget install jqlang.jq` / `brew install jq` / `apt install jq` |
+| **bash** | any | Included with Git for Windows, WSL, macOS, Linux |
+| **curl** | any | Included on macOS/Linux, included with Git for Windows |
+| **jq** | any | Optional but recommended — `winget install jqlang.jq` / `brew install jq` / `apt install jq` |
 
-> **Note Windows** : Git for Windows fournit `bash` et `curl` dans Git Bash. Assure-toi que `bash` est dans ton PATH (c'est le cas par defaut avec Git for Windows).
+> **Windows note**: Git for Windows provides `bash` and `curl` in Git Bash. Make sure `bash` is in your PATH (it is by default with Git for Windows).
 
 ---
 
-## Installation
+## Setup
 
-### 1. Cloner le repo
+### 1. Clone the repo
 
 ```bash
 git clone https://github.com/Nyx-Off/claude-agents-dashboard.git
 cd claude-agents-dashboard
 ```
 
-### 2. Configurer les hooks Claude Code
+### 2. Configure Claude Code hooks
 
-Ajoute ceci dans ton fichier `~/.claude/settings.json` :
+Add this to your `~/.claude/settings.json`:
 
-**Linux / macOS :**
+**Linux / macOS:**
 ```json
 {
   "hooks": {
@@ -81,7 +83,7 @@ Ajoute ceci dans ton fichier `~/.claude/settings.json` :
 }
 ```
 
-**Windows (Git Bash) :**
+**Windows (Git Bash):**
 ```json
 {
   "hooks": {
@@ -109,135 +111,134 @@ Ajoute ceci dans ton fichier `~/.claude/settings.json` :
 }
 ```
 
-> Adapte le chemin selon ou tu as clone le repo. Le `~` est resolu par bash.
+> Adjust the path depending on where you cloned the repo. `~` is resolved by bash.
 
-> Si tu as deja un `settings.json` avec d'autres options, ajoute juste la section `hooks` a l'interieur.
+> If you already have a `settings.json` with other options, just add the `hooks` section inside it.
 
-### 3. Lancer le serveur
+### 3. Start the server
 
 ```bash
 npm start
 ```
 
-Ou sur Windows, double-clic sur `start.bat`.
+Or on Windows, double-click `start.bat`.
 
-Le serveur demarre sur `http://localhost:8787` et ouvre le navigateur automatiquement.
+The server starts on `http://localhost:8787` and opens the browser automatically.
 
-### 4. Utiliser Claude Code normalement
+### 4. Use Claude Code normally
 
-Lance Claude Code dans n'importe quel projet. Des qu'un agent est cree (via l'outil Agent), il apparait sur le dashboard avec ses tool calls en temps reel.
-
----
-
-## Verification rapide
-
-Pour verifier que tout fonctionne :
-
-1. Lance le serveur : `npm start`
-2. Ouvre http://localhost:8787 — tu dois voir "Disconnected" puis "Connected"
-3. Dans Claude Code, demande quelque chose qui lance un agent, par exemple :
-   ```
-   Lance un agent Explorer pour lister les fichiers du projet
-   ```
-4. L'agent doit apparaitre sur le dashboard avec ses actions
-
-Si l'agent n'apparait pas, verifie :
-- Que le serveur tourne bien (`curl http://localhost:8787/api/agents` doit repondre du JSON)
-- Que les hooks sont dans `~/.claude/settings.json` (pas dans le settings.local.json du projet)
-- Que le chemin vers `hook.sh` est correct et que `bash` est dans le PATH
+Launch Claude Code in any project. As soon as an agent is created (via the Agent tool), it appears on the dashboard with its tool calls in real time.
 
 ---
 
-## Configuration avancee
+## Quick check
 
-### Changer le port
+To verify everything works:
+
+1. Start the server: `npm start`
+2. Open http://localhost:8787 — you should see "Disconnected" then "Connected"
+3. In Claude Code, ask something that spawns an agent, for example:
+   ```
+   Launch an Explorer agent to list the project files
+   ```
+4. The agent should appear on the dashboard with its actions
+
+If the agent doesn't show up, check:
+- The server is running (`curl http://localhost:8787/api/agents` should return JSON)
+- The hooks are in `~/.claude/settings.json` (not in the project's settings.local.json)
+- The path to `hook.sh` is correct and `bash` is in your PATH
+
+---
+
+## Advanced configuration
+
+### Change the port
 
 ```bash
-# Edite server.js ligne 5 :
+# Edit server.js line 5:
 const PORT = 9000;
 ```
 
-Et mets a jour `DASHBOARD_URL` dans le hook :
+And update `DASHBOARD_URL` in the hook:
 ```bash
 DASHBOARD_URL=http://localhost:9000 bash hook.sh pre
 ```
 
-Ou exporte la variable :
+Or export the variable:
 ```bash
 export DASHBOARD_URL=http://localhost:9000
 ```
 
-### Serveur sur une autre machine
+### Server on a remote machine
 
-Le hook et le serveur communiquent via HTTP. Tu peux lancer le serveur sur une machine distante :
+The hook and server communicate via HTTP. You can run the server on a remote machine:
 
-1. Modifie `server.js` pour ecouter sur `0.0.0.0` au lieu de `127.0.0.1` :
+1. Edit `server.js` to listen on `0.0.0.0` instead of `127.0.0.1`:
    ```js
    server.listen(PORT, '0.0.0.0', () => { ... });
    ```
-2. Mets `DASHBOARD_URL=http://<ip-du-serveur>:8787` dans les hooks
+2. Set `DASHBOARD_URL=http://<server-ip>:8787` in the hooks
 
-### Limites configurables (server.js)
+### Configurable limits (server.js)
 
-| Constante | Defaut | Description |
+| Constant | Default | Description |
 |---|---|---|
-| `PORT` | `8787` | Port d'ecoute |
-| `MAX_AGENTS` | `50` | Nombre max d'agents en memoire |
-| `MAX_TOOL_CALLS` | `50` | Nombre max de tool calls par agent |
-| `MAX_LOG` | `200` | Nombre max d'entrees dans le log |
-| `DONE_TTL_MS` | `30 min` | Duree avant suppression d'un agent termine |
-| `IDLE_TIMEOUT_MS` | `15 s` | Delai d'inactivite avant de marquer un agent "done" |
+| `PORT` | `8787` | Listening port |
+| `MAX_AGENTS` | `50` | Max agents in memory |
+| `MAX_TOOL_CALLS` | `50` | Max tool calls per agent |
+| `MAX_LOG` | `200` | Max log entries |
+| `DONE_TTL_MS` | `30 min` | Time before removing a finished agent |
+| `IDLE_TIMEOUT_MS` | `15 s` | Inactivity delay before marking an agent "done" |
 
 ---
 
-## Structure du projet
+## Project structure
 
 ```
 claude-agents-dashboard/
-├── server.js        # Serveur HTTP Node.js (API + fichiers statiques)
-├── index.html       # Dashboard navigateur (HTML/CSS/JS vanilla)
-├── hook.sh          # Script bash appele par les hooks Claude Code
-├── start.bat        # Lanceur Windows (double-clic)
-├── package.json     # Metadata npm
-├── agents.json      # Etat runtime (auto-genere, gitignore)
-├── README.md
+├── server.js        # Node.js HTTP server (API + static files)
+├── index.html       # Browser dashboard (vanilla HTML/CSS/JS)
+├── hook.sh          # Bash script called by Claude Code hooks
+├── start.bat        # Windows launcher (double-click)
+├── package.json     # npm metadata
+├── agents.json      # Runtime state (auto-generated, gitignored)
+├── README.md        # This file (English)
+├── README.fr.md     # French version
 ├── CONTRIBUTING.md
-├── LICENSE          # MIT
-└── .claude/
-    └── CLAUDE.md    # Instructions projet pour Claude Code
+└── LICENSE          # MIT
 ```
 
 ---
 
-## Comment ca marche en detail
+## How it works (in detail)
 
-### Attribution des tool calls
+### Tool call attribution
 
-Claude Code fournit `agent_id` et `agent_type` dans le JSON des hooks pour les tool calls effectues par des sous-agents. Les outils du parent (conversation principale) n'ont pas ces champs.
+Claude Code provides `agent_id` and `agent_type` in the hook JSON for tool calls made by sub-agents. Parent-level tools (main conversation) do not have these fields.
 
-Le hook utilise cette distinction pour :
-- **Ignorer** les outils du parent (pas de pollution)
-- **Attribuer precisement** chaque tool call au bon agent
+The hook uses this distinction to:
+- **Ignore** parent-level tools (no pollution)
+- **Precisely attribute** each tool call to the correct agent
 
-Quand un agent est lance, le hook envoie un evenement `start`. Les tool calls suivants arrivent avec le `agent_id` natif de Claude Code, ce qui permet une attribution 1:1 meme avec plusieurs agents en parallele.
+When an agent is launched, the hook sends a `start` event. Subsequent tool calls arrive with the native `agent_id` from Claude Code, enabling 1:1 attribution even with multiple agents running in parallel.
 
-### Auto-detection de fin d'agent
+### Auto-detection of agent completion
 
-Le `PostToolUse` de l'outil `Agent` se declenche quand l'agent est **dispatche**, pas quand il finit. Le serveur detecte automatiquement la fin d'un agent : si aucun tool call pendant 15 secondes, l'agent est marque "done".
+The `PostToolUse` hook for the Agent tool fires when the agent is **dispatched**, not when it finishes. The server automatically detects agent completion: if no tool call is received for 15 seconds, the agent is marked "done".
 
-### Sprites composables
+### Composable sprites
 
-Chaque agent recoit un visage unique genere a partir de son ID via un systeme composable :
-- 3 formes de tete × 6 paires d'yeux × 4 bouches × 5 accessoires = **360 combinaisons**
-- Le meme agent aura toujours le meme visage (hash deterministe)
-- Les yeux s'animent quand l'agent travaille
+Each agent gets a unique face generated from its ID via a composable system:
+- 3 head shapes x 6 eye pairs x 4 mouths x 5 accessories = **360 combinations**
+- The same agent always gets the same face (deterministic hash)
+- Eyes animate while the agent is working
 
 ---
 
-## Desinstallation
+## Uninstall
 
-1. Supprime le dossier du projet
-2. Retire la section `hooks` de `~/.claude/settings.json`
+1. Delete the project folder
+2. Remove the `hooks` section from `~/.claude/settings.json`
 
 ---
 
